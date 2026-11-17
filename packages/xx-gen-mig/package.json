@@ -59,16 +59,11 @@
     "xmlbuilder": "~11.0.1"
   },
   "devDependencies": {
-    "@types/lodash.get": "^4.4.7",
     "@types/node": "^22.14.1",
     "@types/sax": "^1.2.7",
     "es-check": "9.8.1",
-    "lodash.get": "^4.4.2",
     "tsdown": "0.23.7",
     "vitest": "5.0.5"
-  },
-  "peerDependencies": {
-    "lodash.get": "^4"
   },
   "browserslist": [
     "chrome 75"

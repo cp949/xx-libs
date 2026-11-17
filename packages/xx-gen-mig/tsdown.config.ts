@@ -10,6 +10,6 @@ export default defineConfig({
   tsconfig: 'tsconfig.build.json',
   sourcemap: true,
   clean: true,
-  // dependencies와 peerDependencies는 번들에 넣지 않는다.
-  deps: { neverBundle: ['lodash.get', 'sax', 'xmlbuilder'] },
+  // dependencies는 번들에 넣지 않는다.
+  deps: { neverBundle: ['sax', 'xmlbuilder'] },
 });

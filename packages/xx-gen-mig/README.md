@@ -4,10 +4,10 @@
 
 ## 설치
 
-`lodash.get`은 peerDependencies입니다. 함께 설치해야 합니다. `sax`와 `xmlbuilder`는 dependencies라서 자동으로 설치됩니다.
+peerDependencies는 없습니다. `sax`와 `xmlbuilder`는 dependencies라서 자동으로 설치됩니다.
 
 ```bash
-pnpm add @cp949/xx-gen-mig lodash.get
+pnpm add @cp949/xx-gen-mig
 ```
 
 ## 사용

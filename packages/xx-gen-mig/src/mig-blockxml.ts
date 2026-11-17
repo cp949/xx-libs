@@ -1,4 +1,3 @@
-import lodashGet from 'lodash.get';
 import { MakerSound } from './model/common-types';
 import { ignoreBlocks, rules } from './rules';
 import { MigContext } from './rules/util';
@@ -9,13 +8,16 @@ const xmlTextToObject = (xml: string): any => {
   return obj['xml'];
 };
 
+// 블록의 `type` 속성을 읽는다. 블록이 문자열이거나 속성이 없으면 undefined다.
+const getBlockType = (block: any): string | undefined => block?.$?.type;
+
 const getChildren = (block: any) => {
   if (typeof block === 'string') return [];
   return Object.keys(block).filter((it) => it !== '$' && it !== '_' && it !== 'field');
 };
 
 const isIgnore = (block: any, tagName: string): boolean => {
-  const type = lodashGet(block, '$.type');
+  const type = getBlockType(block);
   if (!type) return true;
   if (tagName === 'block') {
     return ignoreBlocks.has(type) || `${type}`.startsWith('mecha_');
@@ -26,7 +28,7 @@ const isIgnore = (block: any, tagName: string): boolean => {
 const parseBlock = (block: any, tagName: string, context: MigContext) => {
   // log.debug(`parseBlock(${tagName})`, block)
   if (tagName !== 'next') {
-    const type = lodashGet(block, '$.type') as string;
+    const type = getBlockType(block) as string;
     const ruleFunc = (
       rules as Record<string, ((block: any, context: MigContext) => void) | undefined>
     )[type];
@@ -37,12 +39,12 @@ const parseBlock = (block: any, tagName: string, context: MigContext) => {
     }
   }
   getChildren(block).forEach((childKey) => {
-    const arr = lodashGet(block, childKey);
+    const arr = block[childKey];
     // log.debug('childKey=' + childKey, block[childKey])
     if (Array.isArray(arr)) {
       arr.forEach((el) => parseBlock(el, childKey, context));
     } else {
-      parseBlock(lodashGet(block, childKey), childKey, context);
+      parseBlock(block[childKey], childKey, context);
     }
   });
 };
@@ -62,7 +64,7 @@ export const migBlockXml = async (blockXml: string, sounds: MakerSound[]): Promi
   //    console.log('root', root)
   if (Array.isArray(root['block'])) {
     root['block'].forEach((el, i) => {
-      const type = lodashGet(el, '$.type');
+      const type = getBlockType(el);
       if (type === 'killdos_string_monitor') {
         delete root['block'][i];
       } else {
