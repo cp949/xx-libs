@@ -1,0 +1,79 @@
+{
+  "name": "@cp949/xx-gen-mig",
+  "version": "1.0.14",
+  "description": "2021년 9월 이전 GEN 파일을 GenFile 객체 포맷으로 변환하는 라이브러리",
+  "keywords": [
+    "gen-mig",
+    "genfile",
+    "migration"
+  ],
+  "homepage": "https://github.com/cp949/xx-libs/tree/main/packages/xx-gen-mig#readme",
+  "bugs": {
+    "url": "https://github.com/cp949/xx-libs/issues"
+  },
+  "license": "MIT",
+  "author": "jjfive",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cp949/xx-libs.git",
+    "directory": "packages/xx-gen-mig"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "LICENSE-xml2js"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "check-types": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json",
+    "test": "vitest run",
+    "check:escompat": "es-check es2019 --module dist/index.js && es-check es2019 dist/index.cjs && node scripts/check-banned-api.mjs",
+    "check:package": "node scripts/check-package.mjs",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "sax": "^1.6.1",
+    "xmlbuilder": "~11.0.1"
+  },
+  "devDependencies": {
+    "@types/lodash.get": "^4.4.7",
+    "@types/node": "^22.14.1",
+    "@types/sax": "^1.2.7",
+    "es-check": "9.8.1",
+    "lodash.get": "^4.4.2",
+    "tsdown": "0.23.7",
+    "vitest": "5.0.5"
+  },
+  "peerDependencies": {
+    "lodash.get": "^4"
+  },
+  "browserslist": [
+    "chrome 75"
+  ],
+  "engines": {
+    "node": ">=22"
+  }
+}

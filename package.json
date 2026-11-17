@@ -1,0 +1,29 @@
+{
+  "name": "xx-libs-repo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "check-types": "turbo run check-types",
+    "check:escompat": "turbo run check:escompat",
+    "check:package": "turbo run check:package",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "verify": "pnpm lint && pnpm format:check && pnpm check-types && pnpm test && pnpm build && pnpm check:escompat && pnpm check:package"
+  },
+  "devDependencies": {
+    "@changesets/cli": "3.0.3",
+    "oxfmt": "0.79.0",
+    "oxlint": "1.94.0",
+    "turbo": "^2.11.11",
+    "typescript": "6.0.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.21.0"
+}
