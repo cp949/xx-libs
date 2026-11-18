@@ -24,7 +24,7 @@ export interface PetNotifyEventMap {
   /** 에이전트가 시작을 마침. 이 시점부터 부모의 명령을 실행한다. */
   commandRunnerStarted: (commandRunner: IPetCommandRunner) => void;
 
-  /** 실행기의 `stop()`과 정리가 끝남. `KodinyPet.stop()`이 먼저 리스너를 모두 지워 구독자에게 도착하지 않는다. */
+  /** 실행기의 `stop()`과 `destroy()`가 끝남 */
   commandRunnerStopped: () => void;
 
   /** 실행기 상태가 바뀜. `state`에 따라 `commandRunner`가 있을 수도 없을 수도 있다. */

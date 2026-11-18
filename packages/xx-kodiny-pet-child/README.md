@@ -37,7 +37,7 @@ await pet.start();
 
 - `new KodinyPet({ iframeToken, commandRunnerClass })`: `commandRunnerClass`는 `IPetContext`를 받는 생성자이고, `init`, `start`, `stop`, `destroy`를 가져야 합니다.
 - `start()`: 실행기를 만들어 `init()`하고 부모에게 `__iframe-state` 이벤트로 `starting`, `ready`를 알립니다. 이어서 부모 명령 수신을 시작합니다.
-- `stop()`: 에이전트를 멈추고 수신을 닫습니다. `notifyEvents`, `commandEvents`, `uiEvents`의 리스너를 모두 지웁니다.
+- `stop()`: 실행기의 `stop()`과 `destroy()`가 끝날 때까지 기다린 뒤 수신을 닫습니다. 부모에게 `__iframe-state` 이벤트로 `stopped`를 알립니다. 마지막에 `notifyEvents`, `commandEvents`, `uiEvents`의 리스너를 모두 지웁니다.
 - 페이지가 `beforeunload`되면 `stop()`을 호출합니다.
 - `toParent.cmd.success()`, `toParent.cmd.error()`, `toParent.event.emit()`: 부모에게 프레임을 보냅니다. 모든 프레임에 `iframeToken`이 붙습니다.
 - `notifyEvents`: `stateChanged`(`stopping`, `started`, `stopped`), `pageStateChanged`, `commandRunner*` 이벤트를 알립니다. 이름과 인자는 `PetNotifyEventMap`에 있습니다.
@@ -58,8 +58,6 @@ await pet.start();
 - 부모가 보낸 메시지의 `event.origin`, `event.source`, `iframeToken`을 검사하지 않습니다. `type`과 `cmd`가 문자열이면 명령으로 받습니다.
 - 부모로 보내는 메시지의 대상 origin은 `*`입니다.
 - 명령 이름에 허용 목록이 없습니다. 부모는 실행기의 `init`, `stop`, `destroy` 같은 멤버도 명령으로 호출할 수 있습니다.
-- `stop()` 뒤에 실행기의 `destroy()`가 호출되지 않고 부모로 `__iframe-state stopped`도 가지 않습니다. 정리 체인이 실행기를 비운 뒤에 `destroy`를 찾기 때문입니다.
-- `stop()`은 실행기 정리를 기다리지 않고 리스너를 모두 지웁니다. `commandRunnerStopped`와 `commandRunnerStateChanged`(`stopped`)는 구독자에게 도착하지 않습니다. 모든 메서드가 바로 끝나는 실행기로 확인했습니다.
 - `start()`에서 에이전트 시작이 실패해도 로그만 남기고 `stateChanged`로 `started`를 알립니다.
 - `PetAgent`는 실행기의 `start()`를 호출하지 않습니다.
 

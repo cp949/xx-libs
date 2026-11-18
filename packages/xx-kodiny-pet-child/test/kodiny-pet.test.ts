@@ -195,24 +195,42 @@ describe('KodinyPet', () => {
     expect(stopSpy).toHaveBeenCalledTimes(1);
   });
 
-  // 알려진 결함이며 원본 동작이다. PetAgent.stop이 실행기 정리 체인을 시작한 직후
-  // commandRunner를 비워서, 체인 안의 destroy_가 실행기를 찾지 못하고 그대로 끝난다.
-  // 고치려면 별도 작업으로 하고 이 테스트를 함께 바꾼다.
-  it('stop 뒤에도 실행기 destroy, __iframe-state stopped, 실행기 정지 이벤트가 나오지 않는다', async () => {
+  // 회귀 테스트: PetAgent.stop이 실행기를 비운 뒤에 정리 체인이 돌아 destroy가 호출되지 않던 결함.
+  it('stop은 실행기 destroy를 호출하고 부모에게 __iframe-state stopped를 보낸다', async () => {
     await pet.start();
     const runner = Runner.created[0]!;
     const destroySpy = vi.spyOn(runner, 'destroy');
-    const runnerEvents = vi.fn();
-    pet.notifyEvents.on('commandRunnerStopped', runnerEvents);
-    pet.notifyEvents.on('commandRunnerStateChanged', runnerEvents);
     toParentSpy.mockClear();
 
     await pet.stop();
-    // 정리 체인은 stop이 기다리지 않는 비동기 흐름이라, 끝날 시간을 준 뒤에 확인한다.
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(destroySpy).not.toHaveBeenCalled();
-    expect(toParentSpy).not.toHaveBeenCalled();
-    // KodinyPet.stop()이 정리 체인보다 먼저 리스너를 모두 지운다.
-    expect(runnerEvents).not.toHaveBeenCalled();
+    expect(destroySpy).toHaveBeenCalledTimes(1);
+    expect(toParentSpy.mock.calls.map(([frame]) => [frame.eventKey, frame.args])).toEqual([
+      ['__iframe-state', ['stopped']],
+    ]);
+  });
+
+  // 회귀 테스트: KodinyPet.stop이 정리 체인을 기다리지 않고 리스너를 지워 이벤트가 도착하지 않던 결함.
+  it('stop이 끝나기 전에 실행기 정지 이벤트가 구독자에게 도착한다', async () => {
+    await pet.start();
+    const events: string[] = [];
+    pet.notifyEvents.on('commandRunnerDestroyed', () => events.push('destroyed'));
+    pet.notifyEvents.on('commandRunnerStateChanged', (p) => events.push(`changed:${p.state}`));
+    pet.notifyEvents.on('commandRunnerStopped', () => events.push('stopped'));
+
+    await pet.stop();
+    expect(events).toEqual(['destroyed', 'changed:stopped', 'stopped']);
+  });
+
+  it('실행기 stop이 던져도 destroy와 정지 이벤트는 이어진다', async () => {
+    await pet.start();
+    const runner = Runner.created[0]!;
+    vi.spyOn(runner, 'stop').mockRejectedValue(new Error('stop failed'));
+    const destroySpy = vi.spyOn(runner, 'destroy');
+    const onStopped = vi.fn();
+    pet.notifyEvents.on('commandRunnerStopped', onStopped);
+
+    await pet.stop();
+    expect(destroySpy).toHaveBeenCalledTimes(1);
+    expect(onStopped).toHaveBeenCalledTimes(1);
   });
 });

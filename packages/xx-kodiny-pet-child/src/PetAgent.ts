@@ -74,11 +74,8 @@ export class PetAgent implements IPetAgent {
     this.notifyEvents.emit('commandRunnerInitialized', commandRunner);
   };
 
-  private destroy_ = async () => {
-    const commandRunner = this.commandRunner;
-    if (!commandRunner) {
-      return;
-    }
+  // 정리할 실행기를 인자로 받는다. stop()이 this.commandRunner를 먼저 비우므로 필드를 읽으면 안 된다.
+  private destroy_ = async (commandRunner: IPetCommandRunner) => {
     try {
       this.toParent.event.emit('__iframe-state', 'stopped');
       await commandRunner.destroy();
@@ -86,7 +83,6 @@ export class PetAgent implements IPetAgent {
     } catch (err) {
       logger.debug('PetAgent.destroy() ignore error: commandRunner.destroy() failed', errmsg(err));
     }
-    this.commandRunner = undefined;
   };
 
   /**
@@ -121,7 +117,12 @@ export class PetAgent implements IPetAgent {
 
   /**
    * 실행기를 멈춘다. 이미 `stopping`이거나 `stopped`이면 아무것도 하지 않는다.
-   * 실행기 정리는 기다리지 않고 비동기로 돌린다.
+   * 실행기의 `stop()`과 `destroy()`가 끝난 뒤에 돌려준다. 둘 중 하나가 던져도 다음 단계로 이어간다.
+   *
+   * 순서:
+   * - 실행기 `stop()`을 호출한다.
+   * - 부모에게 `__iframe-state stopped`를 보내고 실행기 `destroy()`를 호출한다.
+   * - `commandRunnerStateChanged`(`stopped`)와 `commandRunnerStopped`를 알린다.
    */
   stop = async (): Promise<void> => {
     if (this.state_ === 'stopping' || this.state_ === 'stopped') {
@@ -130,31 +131,24 @@ export class PetAgent implements IPetAgent {
     }
     this.state_ = 'stopping';
     const runner = this.commandRunner;
-    if (runner) {
-      runner
-        .stop()
-        .catch((err: unknown) => {
-          logger.debug(errmsg(err));
-        })
-        .finally(() => {
-          this.destroy_()
-            .catch(() => {
-              // ignore error
-            })
-            .finally(() => {
-              this.notifyEvents.emit('commandRunnerStateChanged', {
-                state: 'stopped',
-                commandRunner: runner,
-              });
-
-              this.notifyEvents.emit('commandRunnerStopped');
-            });
-        });
-    }
-    // 주의: 위 정리 체인이 돌기 전에 비운다. `destroy_`는 `this.commandRunner`를 읽으므로 실행기를 찾지 못하고 끝난다.
-    // 그래서 `destroy()`와 부모로 가는 `__iframe-state stopped`가 나가지 않는다. 원본 동작이며 일부러 고치지 않았다.
+    // 정리를 기다리는 동안 run()이 실행기를 쓰지 못하게 먼저 비운다.
     this.commandRunner = undefined;
+    if (runner) {
+      try {
+        await runner.stop();
+      } catch (err) {
+        logger.debug(errmsg(err));
+      }
+      await this.destroy_(runner);
+    }
     this.state_ = 'stopped';
+    if (runner) {
+      this.notifyEvents.emit('commandRunnerStateChanged', {
+        state: 'stopped',
+        commandRunner: runner,
+      });
+      this.notifyEvents.emit('commandRunnerStopped');
+    }
   };
 
   /**

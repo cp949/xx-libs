@@ -71,6 +71,6 @@ export interface IPetCommandRunner {
   /** 동작을 멈춘다. `PetAgent.stop`이 부른다. */
   stop: () => Promise<void>;
 
-  /** 자원을 정리한다. `PetAgent.stop`의 정리 체인이 부르지만, 현재는 실행기를 못 찾아 실제로 불리지 않는다. */
+  /** 자원을 정리한다. `PetAgent.stop`이 `stop()` 다음에 부른다. */
   destroy: () => Promise<void>;
 }
