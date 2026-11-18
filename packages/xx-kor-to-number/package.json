@@ -1,0 +1,70 @@
+{
+  "name": "@cp949/xx-kor-to-number",
+  "version": "1.0.0",
+  "description": "한글 숫자 표현(\"이십일억 사천칠백만\", \"1만 2천\")을 숫자로 바꾸는 함수",
+  "keywords": [
+    "hangul",
+    "korean",
+    "number",
+    "parser"
+  ],
+  "homepage": "https://github.com/cp949/xx-libs/tree/main/packages/xx-kor-to-number#readme",
+  "bugs": {
+    "url": "https://github.com/cp949/xx-libs/issues"
+  },
+  "license": "MIT",
+  "author": "jjfive",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cp949/xx-libs.git",
+    "directory": "packages/xx-kor-to-number"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "check-types": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json",
+    "test": "vitest run",
+    "check:escompat": "es-check es2019 --module dist/index.js && es-check es2019 dist/index.cjs && node scripts/check-banned-api.mjs",
+    "check:package": "node scripts/check-package.mjs",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "es-check": "9.8.1",
+    "tsdown": "0.23.7",
+    "vitest": "5.0.5"
+  },
+  "browserslist": [
+    "chrome 75"
+  ],
+  "engines": {
+    "node": ">=22"
+  }
+}
