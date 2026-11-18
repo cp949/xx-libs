@@ -41,7 +41,7 @@
 3. npm에 패키지가 없으면 첫 버전은 로컬에서 직접 배포한다.
    - trusted publisher 등록은 npm에 존재하는 패키지에 대해 한다고 가정한다. 이 가정은 확인하지 않았다.
    - 배포 전에 `pnpm verify`가 통과하고 `npm view <패키지명>`이 404인지 확인한다.
-   - `workspace:*` 의존이 있으면 의존 대상을 먼저 배포한다. 예: `xx-kodiny-pet-proto`를 `xx-kodiny-pet-parent`와 `xx-kodiny-pet-child`보다 먼저 배포한다. `peerDependencies`로만 쓰는 의존도 먼저 배포한다. 예: `xx-kodiny-hw-iframe`를 `xx-kodiny-hw-iframe-manager`보다 먼저, `xx-hcp-interface`를 `xx-hcp-client-browser`, `xx-hcp-emul-firmata`, `xx-hcp-webserial`보다 먼저 배포한다. `release.sh`는 이 경우를 검사하지 않는다.
+   - `workspace:*` 의존이 있으면 의존 대상을 먼저 배포한다. 예: `xx-kodiny-pet-proto`를 `xx-kodiny-pet-parent`와 `xx-kodiny-pet-child`보다 먼저 배포한다. `peerDependencies`로만 쓰는 의존도 먼저 배포한다. 예: `xx-kodiny-hw-iframe`를 `xx-kodiny-hw-iframe-manager`보다 먼저, `xx-hcp-interface`를 `xx-hcp-client-browser`, `xx-hcp-emul-firmata`, `xx-hcp-webserial`보다 먼저, `xx-kodiny-iframe-proto`를 `xx-kodiny-iframe`보다 먼저 배포한다. `release.sh`는 이 경우를 검사하지 않는다.
    - 루트에서 `./release.sh <패키지 폴더 이름> [옵션]`을 실행한다. 2FA를 쓰면 `--otp=<코드>`를 붙인다. 폴더 이름 뒤의 옵션은 `pnpm publish`에 그대로 넘어간다.
      - 예: `./release.sh xx-kodiny-pet-proto`, `./release.sh xx-kodiny-pet-parent --otp=123456`
      - 실제 배포 없이 확인하려면 `--dry-run`을 붙인다.
