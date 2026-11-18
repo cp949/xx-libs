@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "kodiny pet iframe 통신 프로토콜의 메시지 타입 정의",
   "keywords": [
-    "kodiny",
     "iframe",
+    "kodiny",
     "pet",
     "protocol",
     "types"
