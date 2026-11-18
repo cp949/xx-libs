@@ -165,8 +165,12 @@ export function koreanToNumber(input: string): number {
     const constants = totalNumberAddition(splitKoreanNumber(replaceKoreanNumbers(left)));
 
     const decimal = replaceKoreanNumbers(right);
-    const result = Number(constants.toString() + '.' + decimal.toString());
-    return sign < 0 ? -result : result;
+    // 1e21 이상은 toString()이 지수 표기("1e+21")를 내서 소수부를 붙이면 NaN이 된다.
+    // 이 크기에서는 소수부가 표현되지 않으므로 정수부만 쓴다.
+    const result =
+      constants >= 1e21 ? constants : Number(constants.toString() + '.' + decimal.toString());
+    // -0이 아니라 0을 돌려준다.
+    return sign < 0 && result !== 0 ? -result : result;
   } catch (ignore) {
     return NaN;
   }
