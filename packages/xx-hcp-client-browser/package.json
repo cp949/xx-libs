@@ -1,6 +1,6 @@
 {
   "name": "@cp949/xx-hcp-client-browser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "브라우저에서 HCP 서버에 WebSocket으로 연결해 하드웨어 명령을 보내고 알림을 받는 클라이언트",
   "keywords": [
     "hardware",

@@ -1,6 +1,6 @@
 {
   "name": "@cp949/xx-hcp-emul-firmata",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "HCP 에뮬레이터를 감싸 Firmata 주변장치를 만들고 호출하고 알림을 받는 에뮬레이터",
   "keywords": [
     "firmata",
