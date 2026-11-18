@@ -42,7 +42,12 @@
    - trusted publisher 등록은 npm에 존재하는 패키지에 대해 한다고 가정한다. 이 가정은 확인하지 않았다.
    - 배포 전에 `pnpm verify`가 통과하고 `npm view <패키지명>`이 404인지 확인한다.
    - `workspace:*` 의존이 있으면 의존 대상을 먼저 배포한다. 예: `xx-kodiny-pet-proto`를 `xx-kodiny-pet-parent`와 `xx-kodiny-pet-child`보다 먼저 배포한다.
-   - 패키지 폴더에서 `pnpm publish --no-git-checks`를 실행한다. `dev`에서 배포하므로 브랜치 검사를 끈다. 2FA를 쓰면 `--otp=<코드>`를 붙인다.
+   - 루트에서 `./release.sh <패키지 폴더 이름> [옵션]`을 실행한다. 2FA를 쓰면 `--otp=<코드>`를 붙인다. 폴더 이름 뒤의 옵션은 `pnpm publish`에 그대로 넘어간다.
+     - 예: `./release.sh xx-kodiny-pet-proto`, `./release.sh xx-kodiny-pet-parent --otp=123456`
+     - 실제 배포 없이 확인하려면 `--dry-run`을 붙인다.
+     - 같은 버전이 npm에 있거나 `workspace:*` 의존 대상이 npm에 없으면 배포 전에 멈춘다. `--dry-run`에서는 의존 대상 부재를 경고만 한다.
+     - 배포 전에 루트에서 `pnpm verify`를 실행한다.
+     - `dev`에서 배포하므로 `pnpm publish --no-git-checks`로 브랜치 검사를 끈다.
    - `npm publish`를 쓰지 않는다. `workspace:*`를 실제 버전으로 바꾸는 쪽은 pnpm이다.
    - 로컬 배포에는 provenance가 붙지 않는다. provenance는 `release.yml`이 붙인다.
    - 새 패키지를 모두 배포하고 4번 등록을 마친 뒤에 `main`에 push한다. 먼저 push하면 `release.yml`이 새 패키지를 OIDC로 배포하려다 실패할 수 있다. 이 동작은 추정이다.
