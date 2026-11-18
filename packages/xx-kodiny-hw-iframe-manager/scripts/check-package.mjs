@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 const failures = [];
 
 // 값으로 존재해야 하는 공개 export. 타입만 있는 export는 런타임에 없으므로 넣지 않는다.
-const EXPECTED = { HwIframeManager: 'function' };
+const EXPECTED = { HwIframeManager: 'function', hwIframeManager: 'object' };
 const checkExports = (label, mod) => {
   for (const [name, kind] of Object.entries(EXPECTED)) {
     if (typeof mod[name] !== kind) failures.push(`${label}: ${name}이 ${kind}가 아니다`);

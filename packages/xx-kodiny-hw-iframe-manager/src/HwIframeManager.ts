@@ -11,7 +11,7 @@ export class HwIframeManager {
 
   private logger: Console;
 
-  constructor(iframeSelector: string) {
+  constructor(iframeSelector = '#KODINY_HW_IFRAME') {
     this.io = new HwIframeIo(iframeSelector);
     this.logger = console;
   }
@@ -112,3 +112,6 @@ export class HwIframeManager {
     this.hwId$.next(undefined);
   };
 }
+
+// shared instance
+export const hwIframeManager = new HwIframeManager();

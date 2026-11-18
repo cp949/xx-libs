@@ -3,17 +3,8 @@
 // iframe이 보낸 응답은 부모 window의 message 이벤트로 흉내 낸다.
 // 원본 동작을 그대로 옮긴 코드이므로 어색해 보이는 동작도 바꾸지 않고 고정한다.
 import { firstValueFrom } from 'rxjs';
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  expectTypeOf,
-  it,
-  vi,
-  type MockInstance,
-} from 'vitest';
-import { HwIframeManager } from '../src/index.js';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import { HwIframeManager, hwIframeManager } from '../src/index.js';
 
 /** iframe이 부모로 보낸 것처럼 message 이벤트를 발생시킨다. */
 const fromIframe = (data: unknown): void => {
@@ -85,9 +76,14 @@ describe('HwIframeManager 연결 상태', () => {
     expect(await firstValueFrom(manager.observeIframeMounted())).toBe(true);
   });
 
-  it('생성자의 iframeSelector는 필수 인자다', () => {
-    // 기본값이 없다. 런타임 코드가 없어 컴파일 시점 계약만 확인하고, 검증은 `pnpm check-types`가 한다.
-    expectTypeOf(HwIframeManager).constructorParameters.toEqualTypeOf<[iframeSelector: string]>();
+  it('기본 선택자는 #KODINY_HW_IFRAME이고 공유 인스턴스도 이를 쓴다', async () => {
+    addIframe('KODINY_HW_IFRAME');
+    expect(hwIframeManager).toBeInstanceOf(HwIframeManager);
+
+    manager = new HwIframeManager();
+    manager.start(undefined, '');
+
+    expect(await firstValueFrom(manager.observeIframeMounted())).toBe(true);
   });
 });
 
