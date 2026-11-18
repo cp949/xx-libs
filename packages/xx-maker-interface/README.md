@@ -23,9 +23,9 @@ import {
   type IMakerConfig,
 } from '@cp949/xx-maker-interface';
 
-const id = genId('obj_'); // 예: 'obj_4fzzzx'
+const id = genId('obj_'); // 예: 'obj_k3x9qa'
 
-const existingIds = new Set<string>(['obj_4fzzzx']);
+const existingIds = new Set<string>(['obj_k3x9qa']);
 const uniqueId = genId('obj_', (candidate) => existingIds.has(candidate));
 
 toUserX(0); // -279
@@ -35,10 +35,12 @@ fromUserX(0); // 279
 
 ### genId(prefix, existing?)
 
-- `prefix` 뒤에 `Math.random()`의 base36 문자열 6자를 붙여 돌려준다.
+- `prefix` 뒤에 소문자·숫자(`0-9a-z`) 6자를 붙여 돌려준다. 글자는 `globalThis.crypto.getRandomValues`로 균등하게 뽑는다. `Math.random()`은 쓰지 않는다.
 - `existing(id)`가 `true`를 돌려주면 접두사에 일련번호를 붙여 다시 만든다. 두 번째 시도부터 난수 길이를 6, 7, 8, … 15자로 늘린다.
 - 첫 시도를 포함해 11번 모두 충돌하면 `Error('genIdAuto() fail')`을 던진다.
 - 일련번호는 모듈 안의 전역 값이다. 1부터 시작해 20,000,000 다음에는 1로 돌아간다.
+- `globalThis.crypto.getRandomValues`를 쓸 수 없으면 `SecureRandomUnavailableError`를 던진다. 다른 난수원으로 대체하지 않는다.
+- 난수 뽑기는 `@cp949/random`의 `pickChars`와 `randomString`에서 옮겼다. 바이트 하나로 글자를 정하고 252 이상의 바이트는 버려서(rejection sampling) 36글자의 확률이 같다.
 
 ### 좌표 변환
 
@@ -61,13 +63,12 @@ ESM(`import`)과 CommonJS(`require`)를 모두 지원한다.
 - 브라우저: Chrome 75 이상.
 - 번들: 문법은 ES2019 수준이다. `pnpm check:escompat`가 빌드 결과와 Chrome 75에 없는 API 이름을 검사한다.
 - 런타임 코드는 DOM에 접근하지 않는다. Node에서도 불러올 수 있다.
+- `genId`는 `globalThis.crypto.getRandomValues`가 필요하다. 이 전역이 없는 Node(18 이하)에서는 `SecureRandomUnavailableError`가 난다. `package.json`의 `engines`는 Node 22 이상이다.
 
 ## 알려진 한계
 
-원본에서 옮긴 동작이다. 바꾸지 않고 테스트로 고정했다.
+원본에서 옮긴 동작이다. 바꾸지 않고 테스트로 고정했다. 난수원만 `Math.random()`에서 `crypto`로 바꿨다.
 
-- `genId`의 난수 길이가 `Math.random()`의 base36 문자열보다 길면 id가 더 길어지지 않는다. 테스트에서 쓴 값(`0.123456789`)은 11자였고, 이 값에서는 난수 길이 11~15자의 다섯 시도가 같은 id가 된다.
-- `Math.random()`이 짧은 소수 표현을 돌려주면 id가 6자보다 짧아진다. 값이 `0.5`이면 `prefix + 'i'`, `0`이면 `prefix`만 나온다.
 - 좌표 변환 결과가 반올림으로 0이 되는 음수이면 `0`이 아니라 `-0`이다. 예: `toUserX(278.96)`.
 - `IMakerConfig`가 `tts` 설정을 요구한다. TTS 애드온 패키지는 이 저장소로 옮기지 않았지만 타입에는 남아 있다.
 

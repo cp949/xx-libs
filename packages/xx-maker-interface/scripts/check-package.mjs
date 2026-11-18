@@ -14,6 +14,7 @@ const failures = [];
 // 값으로 존재해야 하는 공개 export. 타입만 있는 export는 런타임에 없으므로 넣지 않는다.
 const EXPECTED = {
   genId: 'function',
+  SecureRandomUnavailableError: 'function',
   toUserX: 'function',
   toUserY: 'function',
   fromUserX: 'function',

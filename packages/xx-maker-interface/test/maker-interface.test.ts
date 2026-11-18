@@ -8,6 +8,7 @@ import {
   OBJECT_STAGE_HEIGHT,
   OBJECT_STAGE_SIZE,
   OBJECT_STAGE_WIDTH,
+  SecureRandomUnavailableError,
   toUserX,
   toUserY,
   type IMakerAddon,
@@ -17,28 +18,79 @@ import {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
+
+/**
+ * `crypto.getRandomValues`가 `next()`가 돌려주는 바이트로 버퍼를 채우게 한다.
+ * base36은 바이트 하나가 `byte % 36`번째 글자(0~9, a~z)가 되고, 252 이상은 버려진다.
+ * 반환값은 요청한 바이트 길이를 호출 순서대로 모은 배열이다.
+ */
+const feedBytes = (next: () => number): number[] => {
+  const requested: number[] = [];
+  vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(((array: Uint8Array) => {
+    requested.push(array.length);
+    for (let i = 0; i < array.length; i++) array[i] = next();
+    return array;
+  }) as never);
+  return requested;
+};
+
+const constant = (byte: number) => () => byte;
+
+/** 0, 1, 2, … 순서로 바이트를 낸다. */
+const counting = () => {
+  let n = 0;
+  return () => n++;
+};
 
 describe('genId', () => {
   it('접두사 뒤에 base36 난수 6자를 붙인다', () => {
-    // 0.123456789.toString(36) = "0.4fzzzxjylrx"
-    vi.spyOn(Math, 'random').mockReturnValue(0.123456789);
+    const requested = feedBytes(counting());
 
-    expect(genId('obj_')).toBe('obj_4fzzzx');
+    expect(genId('obj_')).toBe('obj_012345');
+    // 거부될 몫까지 감안해 ceil(6 * 256 / 252) = 7바이트를 한 번에 요청한다.
+    expect(requested).toEqual([7]);
+  });
+
+  it('252 이상의 바이트는 버리고 모자라면 남은 글자 수만큼 다시 요청한다', () => {
+    const bytes = [252, 253, 254, 255, 35, 36, 37, 38, 39, 40, 41];
+    const requested = feedBytes(() => bytes.shift()!);
+
+    // 첫 요청 7바이트: 4개 거부, 35(z) 36(0) 37(1) 수용. 남은 3자는 ceil(3 * 256 / 252) = 4바이트를 다시 요청한다.
+    expect(genId('p')).toBe('pz01234');
+    expect(requested).toEqual([7, 4]);
+  });
+
+  it('난수는 Math.random이 아니라 crypto에서 얻는다', () => {
+    const random = vi.spyOn(Math, 'random');
+    const getRandomValues = vi.spyOn(globalThis.crypto, 'getRandomValues');
+
+    // 충돌 경로(일련번호, 길이 늘리기)까지 모두 태운다.
+    expect(() => genId('p', () => true)).toThrow('genIdAuto() fail');
+
+    expect(random).not.toHaveBeenCalled();
+    expect(getRandomValues).toHaveBeenCalledTimes(11);
+  });
+
+  it('실제 crypto로 만든 id는 접두사 뒤에 소문자와 숫자 6자다', () => {
+    for (let i = 0; i < 200; i++) {
+      expect(genId('obj_')).toMatch(/^obj_[0-9a-z]{6}$/);
+    }
   });
 
   it('existing이 true를 돌려주면 접두사에 일련번호를 붙여 다시 만든다', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.123456789);
-    const taken = new Set(['obj_4fzzzx']);
+    feedBytes(constant(10)); // 항상 'a'
+    const taken = new Set(['obj_aaaaaa']);
 
-    const id = genId('obj_', (it) => taken.has(it));
+    const id = genId('obj_', (candidate) => taken.has(candidate));
 
     // 일련번호는 모듈 전체에서 이어지므로 값 자체는 고정하지 않는다.
-    expect(id).toMatch(/^obj_\d+4fzzzx$/);
+    expect(id).toMatch(/^obj_\d+aaaaaa$/);
   });
 
   it('충돌할 때마다 일련번호가 1씩 늘어난다', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.123456789);
+    feedBytes(constant(10));
     const collideOnce = () => {
       let first = true;
       return () => {
@@ -51,41 +103,64 @@ describe('genId', () => {
     const a = genId('p', collideOnce());
     const b = genId('p', collideOnce());
 
-    const seq = (id: string) => Number(/^p(\d+)4fzzzx$/.exec(id)![1]);
+    const seq = (id: string) => Number(/^p(\d+)aaaaaa$/.exec(id)![1]);
     expect(seq(b)).toBe(seq(a) + 1);
   });
 
   it('계속 충돌하면 난수 길이를 6에서 15까지 늘려 보다가 던진다', () => {
-    // 이 난수의 base36 소수부는 "4fzzzxjylrx" 11자다.
-    vi.spyOn(Math, 'random').mockReturnValue(0.123456789);
+    feedBytes(constant(10));
     const tried: string[] = [];
 
     expect(() =>
-      genId('p', (it) => {
-        tried.push(it);
+      genId('p', (candidate) => {
+        tried.push(candidate);
         return true;
       }),
     ).toThrow('genIdAuto() fail');
 
     // 첫 시도는 'p' + 6자. 이후는 'p' + 일련번호 + 난수 6자, 이어서 7자, 8자, … 15자.
-    const digits = '4fzzzxjylrx';
     const prefix2 = tried[1].slice(0, -6);
-    expect(tried[0]).toBe('p4fzzzx');
+    expect(tried[0]).toBe('paaaaaa');
     expect(tried).toHaveLength(11);
     expect(tried.slice(1)).toEqual(
-      Array.from({ length: 10 }, (_, k) => prefix2 + digits.slice(0, 6 + k)),
+      Array.from({ length: 10 }, (_, k) => prefix2 + 'a'.repeat(6 + k)),
     );
-    // 난수 문자열이 11자뿐이라 11자 이후 다섯 번은 같은 id를 시도한다.
-    expect(new Set(tried.slice(-5)).size).toBe(1);
   });
 
-  it('난수가 짧으면 요청한 길이보다 짧은 id를 만든다', () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.5); // "0.i"
+  it('crypto를 쓸 수 없으면 Math.random으로 대체하지 않고 SecureRandomUnavailableError를 던진다', () => {
+    const random = vi.spyOn(Math, 'random');
+    vi.stubGlobal('crypto', undefined);
 
-    expect(genId('p')).toBe('pi');
+    expect(() => genId('p')).toThrow(SecureRandomUnavailableError);
+    expect(() => genId('p')).toThrow(
+      'globalThis.crypto.getRandomValues is not available in this environment',
+    );
 
-    vi.spyOn(Math, 'random').mockReturnValue(0); // "0"
-    expect(genId('p')).toBe('p');
+    vi.stubGlobal('crypto', {});
+    expect(() => genId('p')).toThrow(SecureRandomUnavailableError);
+    expect(random).not.toHaveBeenCalled();
+  });
+
+  it('globalThis.crypto 접근이 예외를 던져도 미지원으로 본다', () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'crypto')!;
+    Object.defineProperty(globalThis, 'crypto', {
+      configurable: true,
+      get() {
+        throw new Error('blocked');
+      },
+    });
+    try {
+      expect(() => genId('p')).toThrow(SecureRandomUnavailableError);
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', original);
+    }
+  });
+
+  it('SecureRandomUnavailableError는 이름을 가진 Error다', () => {
+    const error = new SecureRandomUnavailableError();
+
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('SecureRandomUnavailableError');
   });
 });
 
