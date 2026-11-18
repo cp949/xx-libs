@@ -419,82 +419,6 @@ export class SaeonAlControl extends AbstractHwControl {
   }
 
   /**
-   * original name: getBitMergeReuslt
-   */
-  private makeUint16_(byH: any, byL: any) {
-    const high = 0xff & byH;
-    const low = 0xff & byL;
-    return (high << 8) | low;
-  }
-
-  /**
-   * original name: getBitMergeResultItSigned_12Bit()
-   */
-  private makeSigned12Bit_(byH: any, byL: any) {
-    let nTempH = (byH << 8) | byL;
-    if ((nTempH & 0x8000) === 0x8000) {
-      nTempH = ~(nTempH - 1);
-      nTempH = 0 - (nTempH & 0xffff);
-    } else {
-      nTempH &= 0x7fff;
-    }
-    return nTempH >> 4;
-  }
-
-  /**
-   * original name: GetBitMergeResultSigned_16Bit()
-   */
-  private makeSigned16Bit_(byH: any, byL: any) {
-    let nTempH = (byH << 8) | byL;
-    if ((nTempH & 0x8000) === 0x8000) {
-      nTempH = ~(nTempH - 1);
-      nTempH = 0 - (nTempH & 0xffff);
-    } else {
-      nTempH &= 0x7fff;
-    }
-    return nTempH;
-  }
-
-  /**
-   * original name: GetTemperatureValueByADC()
-   */
-  private makeAdcTemp_(adcVal: number) {
-    const k3 = (5.0 / 1024) * adcVal;
-    const k2 = (10 * k3) / (5 - k3);
-    const k =
-      0.0009 * (k2 * k2 * k2 * k2) -
-      0.0622 * (k2 * k2 * k2) +
-      (1.5411 * k2 * k2 - 18.05 * k2 + 103.61);
-
-    return Math.round(k);
-  }
-
-  /**
-   * original name: GetBatteryValueByADC()
-   */
-  private makeAdcBattery_(adcVal: number) {
-    const voltage = 0.0027 * adcVal + 5.8958;
-    if (voltage < 7) return 0;
-    if (voltage > 8.3) return 100;
-
-    const per = ((voltage - 7) / (8.3 - 7)) * 100;
-    return Math.round(clamp(per, 0, 100));
-  }
-
-  /**
-   * update checksums
-   */
-  private updateCksum_(array: number[]) {
-    let cksum = 0;
-    for (let i = 1; i < 28; i++) {
-      if (i !== 2) {
-        cksum += array[i];
-      }
-    }
-    array[2] = cksum;
-  }
-
-  /**
    * force stop
    */
   private forceStopAll_ = async () => {
@@ -508,7 +432,7 @@ export class SaeonAlControl extends AbstractHwControl {
         output.updateForStopAll();
 
         const bytes = createDefaultTxBytes();
-        this.updateCksum_(bytes);
+        updateCksum_(bytes);
 
         if (TRACE) console.log('TX', bytes);
         await this.writeRaw_(bytes).catch((err) => {
@@ -555,7 +479,7 @@ export class SaeonAlControl extends AbstractHwControl {
     this.txBytes[22] = output.BZR;
     this.txBytes[23] = output.LED;
 
-    this.updateCksum_(this.txBytes);
+    updateCksum_(this.txBytes);
     if (TRACE) console.log('TX', this.txBytes);
     await this.writeRaw_(this.txBytes).catch((err) => {
       console.info(logTag, `write fail: ${err.message}`);
@@ -614,17 +538,17 @@ export class SaeonAlControl extends AbstractHwControl {
     }
 
     // signed 12 bit
-    function s12(this: any, index: number) {
+    function s12(index: number) {
       const high = pkt[index] & 0xff;
       const low = pkt[index + 1] & 0xff;
-      return this.makeSigned12Bit_(high, low);
+      return makeSigned12Bit_(high, low);
     }
 
     // signed 16 bit
-    function s16(this: any, index: number) {
+    function s16(index: number) {
       const high = pkt[index] & 0xff;
       const low = pkt[index + 1] & 0xff;
-      return this.makeSigned16Bit_(high, low);
+      return makeSigned16Bit_(high, low);
     }
 
     // copy the value of the packet to the sensor
@@ -637,7 +561,7 @@ export class SaeonAlControl extends AbstractHwControl {
     sensors.LMC = u16(19);
     sensors.RMC = u16(21);
     sensors.STC = u16(23);
-    sensors.TEMP = this.makeAdcTemp_(u16(49));
+    sensors.TEMP = makeAdcTemp_(u16(49));
     sensors.CDS = u16(43);
     sensors.ACC_X = s12(25);
     sensors.ACC_Y = s12(27);
@@ -645,7 +569,7 @@ export class SaeonAlControl extends AbstractHwControl {
     sensors.MAG_X = s12(31);
     sensors.MAG_Y = s12(33);
     sensors.MAG_Z = s12(35);
-    sensors.BAT = this.makeAdcBattery_(u16(47));
+    sensors.BAT = makeAdcBattery_(u16(47));
     sensors.GYR_X = s16(37);
     sensors.GYR_Y = s16(39);
     sensors.GYR_Z = s16(41);
@@ -709,3 +633,70 @@ export class SaeonAlControl extends AbstractHwControl {
     await this.forceStopAll_();
   };
 }
+
+/**
+ * original name: getBitMergeResultItSigned_12Bit()
+ */
+const makeSigned12Bit_ = (byH: any, byL: any) => {
+  let nTempH = (byH << 8) | byL;
+  if ((nTempH & 0x8000) === 0x8000) {
+    nTempH = ~(nTempH - 1);
+    nTempH = 0 - (nTempH & 0xffff);
+  } else {
+    nTempH &= 0x7fff;
+  }
+  return nTempH >> 4;
+};
+
+/**
+ * original name: GetBitMergeResultSigned_16Bit()
+ */
+const makeSigned16Bit_ = (byH: any, byL: any) => {
+  let nTempH = (byH << 8) | byL;
+  if ((nTempH & 0x8000) === 0x8000) {
+    nTempH = ~(nTempH - 1);
+    nTempH = 0 - (nTempH & 0xffff);
+  } else {
+    nTempH &= 0x7fff;
+  }
+  return nTempH;
+};
+
+/**
+ * original name: GetTemperatureValueByADC()
+ */
+const makeAdcTemp_ = (adcVal: number) => {
+  const k3 = (5.0 / 1024) * adcVal;
+  const k2 = (10 * k3) / (5 - k3);
+  const k =
+    0.0009 * (k2 * k2 * k2 * k2) -
+    0.0622 * (k2 * k2 * k2) +
+    (1.5411 * k2 * k2 - 18.05 * k2 + 103.61);
+
+  return Math.round(k);
+};
+
+/**
+ * original name: GetBatteryValueByADC()
+ */
+const makeAdcBattery_ = (adcVal: number) => {
+  const voltage = 0.0027 * adcVal + 5.8958;
+  if (voltage < 7) return 0;
+  if (voltage > 8.3) return 100;
+
+  const per = ((voltage - 7) / (8.3 - 7)) * 100;
+  return Math.round(clamp(per, 0, 100));
+};
+
+/**
+ * update checksums
+ */
+const updateCksum_ = (array: number[]) => {
+  let cksum = 0;
+  for (let i = 1; i < 28; i++) {
+    if (i !== 2) {
+      cksum += array[i];
+    }
+  }
+  array[2] = cksum;
+};

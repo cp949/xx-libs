@@ -115,7 +115,6 @@ Control 공통과 wiseXboard 계열:
 
 saeonAl과 saeonAltinoLite:
 
-- `saeonAl`의 수신 처리(`handleRxPacket_`)는 내부 함수 `s12`, `s16`이 `this` 없이 불려 `TypeError`로 거부된다. 유효한 패킷마다 처리되지 않은 Promise 거부가 생긴다. IR, LMC, RMC, STC, TEMP, CDS까지만 갱신되고 ACC, MAG, GYR, BAT는 0으로 남는다.
 - `saeonAl`의 `go`는 속도가 0이어도 방향 비트 `0x80`이 선다.
 - `saeonAl`의 `steering`은 숫자가 아닌 옵션을 거르지 않는다. `Right-abc`는 `NaN`이 되어 프레임 5번과 체크섬이 0으로 실린다.
 - `saeonAl`의 체크섬은 마스크 없이 합산해 `Uint8Array`로 바뀔 때 잘린다. `display_off`는 `DMC`를 지우지 않는다.

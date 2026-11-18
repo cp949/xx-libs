@@ -283,47 +283,55 @@ describe('SaeonAlControl 센서', () => {
     expect(await control.sensor({}, 'IR1')).toBe(0);
   });
 
-  it('정상 패킷은 s12/s16 호출에서 TypeError로 거부되고, 그 앞에서 채운 IR·LMC·RMC·STC·TEMP·CDS만 갱신된다', async () => {
-    const { control } = await createControl();
+  /** 56바이트 수신 패킷을 만든다. 값은 big endian 2바이트로 채운다. */
+  const makeRxPacket = (values: Record<number, number>) => {
     const pkt = new Uint8Array(56);
     pkt[0] = 2;
     pkt[55] = 3;
-    const put = (index: number, value: number) => {
-      pkt[index] = value >> 8;
-      pkt[index + 1] = value & 0xff;
-    };
-    put(7, 0x0102); // IR1
-    put(19, 0x0304); // LMC
-    put(43, 0x0506); // CDS
-    put(25, 0x1234); // ACC_X: s12가 던지므로 반영되지 않는다.
-    put(47, 0x0200); // BAT: 던진 뒤라 반영되지 않는다.
+    for (const [index, value] of Object.entries(values)) {
+      pkt[Number(index)] = value >> 8;
+      pkt[Number(index) + 1] = value & 0xff;
+    }
+    return pkt;
+  };
 
-    // s12/s16은 일반 function이라 this가 undefined다. rxLoop_은 이 Promise를 기다리지 않는다.
-    await expect(handleRxPacket(control)('test', pkt)).rejects.toThrow(TypeError);
+  it('정상 패킷은 IR·LMC·CDS·TEMP와 ACC·BAT까지 모든 센서 값을 갱신한다', async () => {
+    const { control } = await createControl();
+    const pkt = makeRxPacket({
+      7: 0x0102, // IR1
+      19: 0x0304, // LMC
+      43: 0x0506, // CDS
+      25: 0x1234, // ACC_X (12비트 부호 값)
+      47: 600, // BAT (ADC 값)
+    });
+
+    await expect(handleRxPacket(control)('test', pkt)).resolves.toBeUndefined();
 
     const read = (name: string) => control.sensor({}, name);
     expect([await read('IR1'), await read('LMC'), await read('CDS'), await read('TEMP')]).toEqual([
       0x0102, 0x0304, 0x0506, 104,
     ]);
-    expect([await read('ACC_X'), await read('BAT'), await read('GYR_X')]).toEqual([0, 0, 0]);
+    expect([await read('ACC_X'), await read('BAT')]).toEqual([0x123, 40]);
   });
 
-  it('부호 변환과 배터리 변환 보조 함수는 값을 자르고 부호를 처리한다(현재는 s12/s16 때문에 호출 경로로 닿지 못한다)', async () => {
+  it('ACC·MAG는 12비트, GYR은 16비트 부호 값으로 읽고 배터리는 0~100으로 자른다', async () => {
     const { control } = await createControl();
-    const helpers = control as unknown as {
-      makeSigned12Bit_: (high: number, low: number) => number;
-      makeSigned16Bit_: (high: number, low: number) => number;
-      makeAdcBattery_: (adc: number) => number;
-    };
+    const handle = handleRxPacket(control);
+    const read = (name: string) => control.sensor({}, name);
 
-    expect(helpers.makeSigned12Bit_(0x12, 0x34)).toBe(0x123);
-    expect(helpers.makeSigned12Bit_(0xff, 0xf0)).toBe(-1);
-    expect(helpers.makeSigned16Bit_(0x12, 0x34)).toBe(0x1234);
-    expect(helpers.makeSigned16Bit_(0xff, 0xf0)).toBe(-16);
+    // 0xfff0은 12비트로 읽으면 -1, 16비트로 읽으면 -16이다.
+    await handle('test', makeRxPacket({ 25: 0xfff0, 31: 0x1234, 37: 0xfff0, 39: 0x1234, 47: 0 }));
+    expect([
+      await read('ACC_X'),
+      await read('MAG_X'),
+      await read('GYR_X'),
+      await read('GYR_Y'),
+    ]).toEqual([-1, 0x123, -16, 0x1234]);
+    expect(await read('BAT')).toBe(0);
+
     // 전압 = 0.0027 * adc + 5.8958. 7V 미만은 0, 8.3V 초과는 100이다.
-    expect(helpers.makeAdcBattery_(0)).toBe(0);
-    expect(helpers.makeAdcBattery_(600)).toBe(40);
-    expect(helpers.makeAdcBattery_(1000)).toBe(100);
+    await handle('test', makeRxPacket({ 47: 1000 }));
+    expect(await read('BAT')).toBe(100);
   });
 });
 
