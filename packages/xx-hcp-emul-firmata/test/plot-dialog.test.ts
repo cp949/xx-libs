@@ -26,6 +26,7 @@ beforeEach(() => {
 afterEach(() => {
   subscriptions.splice(0).forEach((it) => it.unsubscribe());
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('FirmataPlotDialogEvent', () => {
@@ -119,5 +120,19 @@ describe('FirmataManager.plot', () => {
     await expect(new FirmataManager().plot({}, 'sensor:1', 'onChange')).resolves.toBeUndefined();
 
     expect(debug).toHaveBeenCalledWith('PLOT 실패:', '열기 실패');
+  });
+
+  it('crypto를 쓸 수 없어 requestId를 만들지 못하면 요청 없이 오류를 삼키고 정상 종료한다', async () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    const requests = collectRequests();
+    vi.stubGlobal('crypto', undefined);
+
+    await expect(new FirmataManager().plot({}, 'sensor:1', 'onChange')).resolves.toBeUndefined();
+
+    expect(requests).toEqual([]);
+    expect(debug).toHaveBeenCalledWith(
+      'PLOT 실패:',
+      'globalThis.crypto.getRandomValues is not available in this environment',
+    );
   });
 });

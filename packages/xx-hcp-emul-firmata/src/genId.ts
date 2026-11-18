@@ -1,8 +1,8 @@
+import { randomIntBelow } from './secure-random.js';
+
+/** [min, max]에서 균등하게 정수를 뽑는다. 최댓값도 최솟값도 포함한다. */
 function getRandomIntInclusive(min: number, max: number) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  // 최댓값도 포함, 최솟값도 포함
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  return min + randomIntBelow(max - min + 1);
 }
 
 let seq = 1;

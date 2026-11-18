@@ -70,6 +70,7 @@ FirmataPlotDialogEvent.observeOpenRequest().subscribe(async (req) => {
 - 브라우저: Chrome 75 이상.
 - 번들: 문법은 ES2019 수준이다. `pnpm check:escompat`가 빌드 결과와 Chrome 75에 없는 API 이름을 검사한다.
 - 소스는 `window`와 `document`를 쓰지 않는다. 테스트는 vitest의 node 환경에서 실행한다.
+- `FirmataPlotDialogEvent.open`의 `requestId`를 만들 때 `globalThis.crypto.getRandomValues`를 쓴다. 쓸 수 없으면 `open`이 `SecureRandomUnavailableError`를 던진다. `FirmataManager.plot`은 이 오류도 다른 요청 오류처럼 삼키고 정상 종료한다. `Math.random()`으로 대체하지 않는다.
 
 ## 알려진 한계
 

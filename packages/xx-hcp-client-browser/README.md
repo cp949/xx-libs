@@ -51,7 +51,8 @@ client.close();
 - `hwCommand`는 `'hwId.cmd'` 문자열이다. `{ hwCmd: 'hwId.cmd', args }` 객체도 받는다. `.`으로 나눈 앞의 두 조각만 쓴다.
 - 형식이 맞지 않으면 아무것도 보내지 않고 `Error('unknown')`으로 reject한다.
 - 응답을 7000ms 안에 받지 못하면 rxjs `TimeoutError`로 reject한다.
-- 요청마다 `req`로 시작하는 `requestId`를 새로 만든다.
+- 요청마다 `req`로 시작하는 `requestId`를 새로 만든다. 뒤는 36진수 일련번호이고, 시작 값은 0~9999 중 `globalThis.crypto.getRandomValues`로 뽑는다. 첫 요청 때 한 번 뽑는다.
+- `globalThis.crypto.getRandomValues`를 쓸 수 없으면 요청이 `SecureRandomUnavailableError`로 reject된다. `Math.random()`으로 대체하지 않는다.
 
 ### 패킷 형식
 
@@ -70,7 +71,7 @@ requestId: req1a
 
 ## 지원 환경
 
-- 브라우저: Chrome 75 이상. `WebSocket`, `TextEncoder`, `TextDecoder`를 쓴다.
+- 브라우저: Chrome 75 이상. `WebSocket`, `TextEncoder`, `TextDecoder`, `crypto.getRandomValues`를 쓴다.
 - 번들: 문법은 ES2019 수준이다. `pnpm check:escompat`가 빌드 결과와 Chrome 75에 없는 API 이름을 검사한다.
 - 브라우저용이다. 테스트는 Node에서 직접 만든 가짜 `WebSocket`으로 실행하며, 실제 서버와 연결해 확인하지 않았다.
 
