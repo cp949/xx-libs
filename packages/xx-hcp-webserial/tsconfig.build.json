@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2019", "DOM", "DOM.Iterable"],
+    "types": ["w3c-web-serial"],
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": false
+  },
+  "include": ["src"]
+}

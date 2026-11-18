@@ -1,0 +1,75 @@
+{
+  "name": "@cp949/xx-hcp-client-browser",
+  "version": "1.0.0",
+  "description": "브라우저에서 HCP 서버에 WebSocket으로 연결해 하드웨어 명령을 보내고 알림을 받는 클라이언트",
+  "keywords": [
+    "hardware",
+    "hcp",
+    "rxjs",
+    "websocket"
+  ],
+  "homepage": "https://github.com/cp949/xx-libs/tree/main/packages/xx-hcp-client-browser#readme",
+  "bugs": {
+    "url": "https://github.com/cp949/xx-libs/issues"
+  },
+  "license": "MIT",
+  "author": "jjfive",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cp949/xx-libs.git",
+    "directory": "packages/xx-hcp-client-browser"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "check-types": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json",
+    "test": "vitest run",
+    "check:escompat": "es-check es2019 --module dist/index.js && es-check es2019 dist/index.cjs && node scripts/check-banned-api.mjs",
+    "check:package": "node scripts/check-package.mjs",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@cp949/xx-hcp-interface": "workspace:*",
+    "@types/node": "^22.14.1",
+    "es-check": "9.8.1",
+    "rxjs": "^7.8.2",
+    "tsdown": "0.23.7",
+    "vitest": "5.0.5"
+  },
+  "peerDependencies": {
+    "@cp949/xx-hcp-interface": "^1",
+    "rxjs": "^7"
+  },
+  "browserslist": [
+    "chrome 75"
+  ],
+  "engines": {
+    "node": ">=22"
+  }
+}
