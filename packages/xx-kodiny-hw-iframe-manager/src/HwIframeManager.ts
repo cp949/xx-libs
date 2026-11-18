@@ -93,7 +93,7 @@ export class HwIframeManager {
     return null;
   };
 
-  start = (hwId: string | undefined, iframeSelector: string) => {
+  start = (hwId: string | undefined) => {
     this.hwId$.next(hwId);
     this.io.start();
   };

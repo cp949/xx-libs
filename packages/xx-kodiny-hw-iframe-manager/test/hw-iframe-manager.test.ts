@@ -44,7 +44,7 @@ describe('HwIframeManager 연결 상태', () => {
     const states: string[] = [];
     manager.observeState().subscribe((it) => states.push(it));
 
-    manager.start('hw-1', '#frame');
+    manager.start('hw-1');
     fromIframe({ success: true, type: 'notify', kind: 'connectionState', value: 'connected' });
 
     expect(states).toEqual(['stopped', 'started', 'connected']);
@@ -55,7 +55,7 @@ describe('HwIframeManager 연결 상태', () => {
   it('stop은 상태를 stopped로 돌리고 hwId를 지우며 이후 메시지를 받지 않는다', () => {
     addIframe('frame');
     manager = new HwIframeManager('#frame');
-    manager.start('hw-1', '#frame');
+    manager.start('hw-1');
 
     manager.stop();
     const received: unknown[] = [];
@@ -67,21 +67,12 @@ describe('HwIframeManager 연결 상태', () => {
     expect(received).toEqual([]);
   });
 
-  it('start의 두 번째 인자(iframeSelector)는 쓰지 않고 생성자의 선택자로 iframe을 찾는다', async () => {
-    addIframe('frame');
-    manager = new HwIframeManager('#frame');
-
-    manager.start('hw-1', '#없는-선택자');
-
-    expect(await firstValueFrom(manager.observeIframeMounted())).toBe(true);
-  });
-
   it('기본 선택자는 #KODINY_HW_IFRAME이고 공유 인스턴스도 이를 쓴다', async () => {
     addIframe('KODINY_HW_IFRAME');
     expect(hwIframeManager).toBeInstanceOf(HwIframeManager);
 
     manager = new HwIframeManager();
-    manager.start(undefined, '');
+    manager.start(undefined);
 
     expect(await firstValueFrom(manager.observeIframeMounted())).toBe(true);
   });
@@ -91,7 +82,7 @@ describe('HwIframeManager 수신 필터', () => {
   it('알림은 observeNotification으로, cmd 응답은 observeCmdResponse로 보낸다', () => {
     addIframe('frame');
     manager = new HwIframeManager('#frame');
-    manager.start('hw-1', '#frame');
+    manager.start('hw-1');
     const notifications: unknown[] = [];
     const responses: unknown[] = [];
     manager.observeNotification().subscribe((it) => notifications.push(it));
@@ -109,7 +100,7 @@ describe('HwIframeManager 수신 필터', () => {
   it('success가 boolean이 아니거나 type을 모르는 메시지는 버린다', () => {
     addIframe('frame');
     manager = new HwIframeManager('#frame');
-    manager.start('hw-1', '#frame');
+    manager.start('hw-1');
     const received: unknown[] = [];
     manager.observeNotification().subscribe((it) => received.push(it));
     manager.observeCmdResponse().subscribe((it) => received.push(it));
@@ -140,7 +131,7 @@ describe('HwIframeManager.runCmd', () => {
   it('iframe에 cmd를 보내고 같은 requestId의 성공 응답 value를 돌려준다', async () => {
     const { toIframe } = addIframe('frame');
     manager = new HwIframeManager('#frame');
-    manager.start('hw-1', '#frame');
+    manager.start('hw-1');
 
     const result = manager.runCmd('connect', ['a', 1]);
     const [message, targetOrigin] = await sentRequest(toIframe);
@@ -156,7 +147,7 @@ describe('HwIframeManager.runCmd', () => {
   it('errorCode가 있는 실패 응답은 던지지 않고 null을 돌려준다', async () => {
     const { toIframe } = addIframe('frame');
     manager = new HwIframeManager('#frame');
-    manager.start('hw-1', '#frame');
+    manager.start('hw-1');
 
     const result = manager.runCmd('connect');
     const [message] = await sentRequest(toIframe);
@@ -169,7 +160,7 @@ describe('HwIframeManager.runCmd', () => {
   it('errorCode가 빈 문자열인 실패 응답은 message로 Error를 던진다', async () => {
     const { toIframe } = addIframe('frame');
     manager = new HwIframeManager('#frame');
-    manager.start('hw-1', '#frame');
+    manager.start('hw-1');
 
     const result = manager.runCmd('connect');
     const [message] = await sentRequest(toIframe);
@@ -182,7 +173,7 @@ describe('HwIframeManager.runCmd', () => {
   it('iframe이 3초 안에 나타나지 않으면 undefined를 돌려준다', async () => {
     vi.useFakeTimers();
     manager = new HwIframeManager('#없음');
-    manager.start('hw-1', '#없음');
+    manager.start('hw-1');
 
     const result = manager.runCmd('connect');
     await vi.advanceTimersByTimeAsync(3000);
@@ -193,7 +184,7 @@ describe('HwIframeManager.runCmd', () => {
   it('응답을 기다리는 중 stop을 불러도 runCmd는 끝나지 않는다', async () => {
     const { toIframe } = addIframe('frame');
     manager = new HwIframeManager('#frame');
-    manager.start('hw-1', '#frame');
+    manager.start('hw-1');
 
     const result = manager.runCmd('connect');
     await sentRequest(toIframe);

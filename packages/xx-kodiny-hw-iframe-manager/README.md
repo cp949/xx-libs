@@ -19,14 +19,14 @@ import { hwIframeManager } from '@cp949/xx-kodiny-hw-iframe-manager';
 hwIframeManager.observeState().subscribe((state) => console.log(state));
 hwIframeManager.observeNotification().subscribe((it) => console.log(it.kind, it.value));
 
-hwIframeManager.start('hw-1', '#KODINY_HW_IFRAME');
+hwIframeManager.start('hw-1');
 const state = await hwIframeManager.runCmd('getConnectionState');
 hwIframeManager.stop();
 ```
 
 - `hwIframeManager`: 기본 선택자를 쓰는 공유 인스턴스다.
 - `new HwIframeManager(iframeSelector = '#KODINY_HW_IFRAME')`: 선택자를 바꿔 따로 만들 수 있다. `document.querySelector`로 iframe을 찾는다.
-- `start(hwId, iframeSelector)`: 메시지 수신을 시작한다. 두 번째 인자는 쓰지 않는다. iframe은 생성자의 선택자로 찾는다. iframe이 아직 없으면 500ms 간격으로 다시 찾는다.
+- `start(hwId)`: 메시지 수신을 시작한다. iframe은 생성자의 선택자로 찾는다. iframe이 아직 없으면 500ms 간격으로 다시 찾는다.
 - `stop()`: 수신을 멈추고 `state`를 `stopped`로 바꾸고 `hwId$`를 비운다. `updateDisconnectedForce()`는 `io.stop()`만 부른다.
 - `state`, `isStopped`, `isConnected()`: `started`, `connecting`, `connected`, `disconnected`, `stopped` 중 하나다. iframe이 `kind: 'connectionState'` 알림으로 보낸 값을 따른다.
 - `observeState()`, `observeIframeMounted()`, `observeCmdResponse()`, `observeNotification()`: `rxjs` `Observable`을 돌려준다.
@@ -67,7 +67,6 @@ hwIframeManager.stop();
 
 - 메시지의 `origin`과 보낸 창을 검사하지 않는다. 어느 창이 보낸 메시지든 처리한다.
 - iframe으로 보낼 때 `targetOrigin`이 `*`다.
-- `start()`의 두 번째 인자를 무시한다.
 - `runCmd`는 응답 대기 시간 제한이 없다.
 - `stop()`을 불러도 대기 중인 `runCmd`는 끝나지 않는다.
 - `waitUntilConnected()`는 시간 제한이 없다.
