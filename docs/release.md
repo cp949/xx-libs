@@ -4,17 +4,20 @@
 
 ## 배포 흐름
 
-1. 패키지 동작을 바꾸는 작업에서 `pnpm changeset`을 실행해 `.changeset/*.md`를 만든다.
-2. 작업을 `dev`에서 `main`으로 병합하고 push한다.
-3. `release.yml`이 `pnpm verify`를 실행한다.
-4. 처리할 changeset이 있으면 `changesets/action`이 "패키지 버전 갱신" PR을 만들거나 갱신한다.
-   - PR은 `package.json`의 `version`과 `CHANGELOG.md`를 고치고 소비한 changeset 파일을 지운다.
-5. 그 PR을 `main`에 병합한다.
-6. 병합 push에서 `release.yml`이 다시 실행된다.
-   - 남은 changeset이 없으므로 `pnpm changeset publish`가 npm에 없는 버전의 패키지만 배포한다.
-   - 배포한 패키지마다 `<패키지명>@<버전>` 태그와 GitHub Release가 만들어진다.
+버전을 올리는 일은 사람이 로컬에서 하고, 워크플로는 배포만 한다. 버전 갱신 PR은 만들지 않는다.
 
-changeset이 없는 push는 배포하지 않는다. 의도하지 않은 배포를 막는 장치다.
+1. 패키지 동작을 바꾸는 작업에서 `pnpm changeset`을 실행해 `.changeset/*.md`를 만든다.
+2. 배포할 준비가 되면 `pnpm changeset version`을 실행한다.
+   - `package.json`의 `version`과 `CHANGELOG.md`를 고치고 소비한 changeset 파일을 지운다.
+   - 결과를 같은 작업에 커밋한다.
+3. 작업을 `dev`에서 `main`으로 병합하고 push한다.
+4. `release.yml`이 다음을 실행한다.
+   - 처리하지 않은 changeset이 남아 있으면 실패한다. 2번을 빠뜨린 경우다.
+   - `pnpm verify`를 실행한다.
+   - `pnpm changeset publish`가 npm에 없는 버전의 패키지만 배포한다.
+   - 배포한 패키지마다 `<패키지명>@<버전>` 태그를 push한다.
+
+버전을 올리지 않은 push는 배포하지 않는다. `publish`가 npm에 이미 있는 버전을 건너뛰기 때문이다.
 
 ## changeset 작성 기준
 
@@ -25,7 +28,7 @@ changeset이 없는 push는 배포하지 않는다. 의도하지 않은 배포�
   - `minor`: 기능 추가.
   - `patch`: 버그 수정.
 - 내용은 사용자가 알아야 할 API 변경과 동작 변경을 쓴다.
-- 패키지 의존을 가진 패키지는 `updateInternalDependencies` 설정에 따라 의존 버전이 같이 갱신된다.
+- 패키지 의존을 가진 패키지는 `pnpm changeset version`이 `updateInternalDependencies` 설정에 따라 의존 버전을 같이 갱신한다.
 
 ## 새 패키지 추가 때 할 일
 
@@ -41,12 +44,12 @@ changeset이 없는 push는 배포하지 않는다. 의도하지 않은 배포�
    - Organization or user: `cp949`
    - Repository: `xx-libs`
    - Workflow filename: `release.yml`
-5. 등록을 마친 뒤 changeset을 만들어 배포 흐름을 따른다.
+5. 등록을 마친 뒤 배포 흐름을 따른다.
 
 ## 저장소 설정
 
-- GitHub 저장소 Settings > Actions > General > "Allow GitHub Actions to create and approve pull requests"를 켠다. 꺼져 있으면 버전 갱신 PR 생성이 실패한다.
-- `main`에 보호 규칙을 두면 `github-actions`가 버전 갱신 브랜치를 push할 수 있어야 한다. 버전 갱신 브랜치는 `main`이 아니라 `changeset-release/main`이다.
+- `main`에 보호 규칙을 두면 `github-actions`가 태그를 push할 수 있어야 한다.
+- 워크플로 권한은 `release.yml`의 `permissions`가 정한다. 저장소 기본 권한이 읽기 전용이어도 동작한다.
 
 ## 인증
 
@@ -57,6 +60,7 @@ changeset이 없는 push는 배포하지 않는다. 의도하지 않은 배포�
 ## 실패했을 때
 
 - `pnpm verify` 실패: 배포 단계에 가지 않는다. 원인을 고쳐 다시 push한다.
+- 처리하지 않은 changeset 때문에 실패: `pnpm changeset version`을 실행해 커밋하고 다시 push한다.
 - 배포 단계 인증 실패: 해당 패키지의 trusted publisher 등록 값(저장소, 워크플로 파일명)을 확인한다.
 - 일부 패키지만 배포되고 중간에 실패: 같은 `main` 커밋으로 워크플로를 다시 실행한다. `changeset publish`는 npm에 이미 있는 버전을 건너뛴다.
 
